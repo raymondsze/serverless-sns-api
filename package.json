@@ -4,7 +4,8 @@
   "description": "Build a SNS service on AWS",
   "main": "handler.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "MIT",
