@@ -1,0 +1,152 @@
+service: sns
+plugins:
+  - serverless-webpack
+  - serverless-plugin-existing-s3
+  - serverless-jest-plugin
+custom:
+  webpackIncludeModules: true
+  jest:
+    
+provider:
+  name: aws
+  runtime: nodejs6.10
+  environment:
+    DOMAIN: '${file(./serverless.env.yml):${opt:stage}.DOMAIN}'
+    ARN: '${file(./serverless.env.yml):${opt:stage}.ARN}'
+    ARN_KEY: '${file(./serverless.env.yml):${opt:stage}.ARN_KEY}'
+    ARN_PREFIX: '${file(./serverless.env.yml):${opt:stage}.ARN_PREFIX}'
+    AWS_ACC_ID: '${file(./serverless.env.yml):${opt:stage}.AWS_ACC_ID}'
+    ARN_TOPIC: '${file(./serverless.env.yml):${opt:stage}.ARN_TOPIC}'
+    DYNAMODB_USER: '${file(./serverless.env.yml):${opt:stage}.DYNAMODB_USER}'
+    DYNAMODB_SUBSCRIBE_ACTION: '${file(./serverless.env.yml):${opt:stage}.DYNAMODB_SUBSCRIBE_ACTION}'
+    DYNAMODB_PUBLISH_ACTION: '${file(./serverless.env.yml):${opt:stage}.DYNAMODB_PUBLISH_ACTION}'
+  stage: '${opt:stage}'
+  region: ap-southeast-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - 'dynamodb:DescribeStream'
+        - 'dynamodb:GetRecords'
+        - 'dynamodb:GetShardIterator'
+        - 'dynamodb:ListStreams'
+        - 'dynamodb:PutItem'
+        - 'dynamodb:Query'
+        - 'dynamodb:Scan'
+        - 'dynamodb:UpdateItem'
+        - 'dynamodb:UpdateTimeToLive'
+        - 'dynamodb:BatchGetItem'
+        - 'dynamodb:DeleteItem'
+        - 'sns:*'
+      Resource: '*'
+    # - Effect: "Allow"
+    #   Action:
+    #     - "s3:*"
+    #   Resource: "arn:aws:s3:::${file(./serverless.env.yml):${opt:stage}.S3_BUCKET}/*"
+functions:
+  subscribe:
+    handler: handler/subscribe.handler
+    events:
+      - http:
+          path: sns/subscribe
+          method: post
+          cors: true
+  unsubscribe:
+    handler: handler/unsubscribe.handler
+    events:
+      - http:
+          path: sns/unsubscribe
+          method: post
+          cors: true
+  sendByGroup:
+    handler: handler/sendByGroup.handler
+    events:
+      - http:
+          path: sns/sendByGroup
+          method: post
+          cors: true
+  sendByUser:
+    handler: handler/sendByUser.handler
+    events:
+      - http:
+          path: sns/sendByUser
+          method: post
+          cors: true
+  sendByDevice:
+    handler: handler/sendByDevice.handler
+    events:
+      - http:
+          path: sns/sendByDevice
+          method: post
+          cors: true
+resources:
+  Resources: 
+    SnsUserTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Delete
+      Properties:
+        TableName: '${file(./serverless.env.yml):${opt:stage}.DYNAMODB_USER}'
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: deviceId
+            AttributeType: S
+        KeySchema:
+          # - AttributeName: id
+          #   KeyType: HASH
+          - AttributeName: deviceId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        GlobalSecondaryIndexes:
+        - IndexName: myUser
+          KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: '5'
+            WriteCapacityUnits: '5'
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+    SUBSCRIBETABLE:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Delete
+      Properties:
+        TableName: '${file(./serverless.env.yml):${opt:stage}.DYNAMODB_SUBSCRIBE_ACTION}'
+        AttributeDefinitions:
+          - AttributeName: deviceId
+            AttributeType: S
+          - AttributeName: date
+            AttributeType: N
+        KeySchema:
+          - AttributeName: deviceId
+            KeyType: HASH
+          - AttributeName: date
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+    PUBLISHTABLE:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Delete
+      Properties:
+        TableName: '${file(./serverless.env.yml):${opt:stage}.DYNAMODB_PUBLISH_ACTION}'
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: date
+            AttributeType: N
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: date
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
