@@ -4,6 +4,8 @@ Build a SNS service on AWS, support backend API for SNS by device, by group and 
 
 Only support backend API, App development include SNS platform application & cognito is not included.
 
+[![aws](https://camo.githubusercontent.com/4c0674ab51477ad12576d19fcc316495129d1fc9/68747470733a2f2f636d732e6167696c6974793336306170702e6e65742f77702d636f6e74656e742f75706c6f6164732f323031372f30392f656e74657270726973652d6d6f62696c652d6875625f7365727665726c6573732d636f6d707574652d6170702e706e67)
+
 ## Getting Started
 
 1) Install serverless js
